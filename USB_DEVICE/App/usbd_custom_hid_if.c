@@ -63,6 +63,7 @@
   */
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
+uint8_t buffer[0x40]; //Create 64 byte IO buffer
 
 /* USER CODE END PRIVATE_DEFINES */
 
@@ -92,7 +93,25 @@
 __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DESC_SIZE] __ALIGN_END =
 {
   /* USER CODE BEGIN 0 */
-  0x00,
+		// USB Device Report descriptor
+		//Ref1: (Training materials zip) https://www.st.com/content/st_com/en/support/learning/stm32-education/stm32-moocs/STM32-USB-training.html
+		//Ref2: https://stackoverflow.com/questions/21606991/custom-hid-device-hid-report-descriptor/
+		//Ref3: https://eleccelerator.com/tutorial-about-usb-hid-report-descriptors/
+		0x06, 0x00, 0xff,              //Usage Page(Undefined )
+		0x09, 0x01,                    // USAGE (Undefined)
+		0xa1, 0x01,                    // COLLECTION (Application)
+		0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
+		0x26, 0xff, 0x00,              //   LOGICAL_MAXIMUM (255)
+		0x75, 0x08,                    //   REPORT_SIZE (8)
+		0x95, 0x40,                    //   REPORT_COUNT (64)
+		0x09, 0x01,                    //   USAGE (Undefined)
+		0x81, 0x02,                    //   INPUT (Data,Var,Abs)
+		0x95, 0x40,                    //   REPORT_COUNT (64)
+		0x09, 0x01,                    //   USAGE (Undefined)
+		0x91, 0x02,                    //   OUTPUT (Data,Var,Abs)
+		0x95, 0x01,                    //   REPORT_COUNT (1)
+		0x09, 0x01,                    //   USAGE (Undefined)
+		0xb1, 0x02,                    //   FEATURE (Data,Var,Abs)
   /* USER CODE END 0 */
   0xC0    /*     END_COLLECTION	             */
 };
@@ -125,7 +144,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 
 static int8_t CUSTOM_HID_Init_FS(void);
 static int8_t CUSTOM_HID_DeInit_FS(void);
-static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state);
+static int8_t CUSTOM_HID_OutEvent_FS(uint8_t* state); //Change signature
 
 /**
   * @}
@@ -174,10 +193,12 @@ static int8_t CUSTOM_HID_DeInit_FS(void)
   * @param  state: Event state
   * @retval USBD_OK if all operations are OK else USBD_FAIL
   */
-static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
+static int8_t CUSTOM_HID_OutEvent_FS(uint8_t* state)
 {
   /* USER CODE BEGIN 6 */
-  return (USBD_OK);
+	memcpy(buffer, state, 0x40); //Copy received data to buffer
+	USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, buffer, 0x40); //Echo back received data
+	return (USBD_OK);
   /* USER CODE END 6 */
 }
 
